@@ -39,7 +39,7 @@ def is_valid_pydeep(h):
 # ===== DB 전체 로드 (1회만) =====
 print(f"[i] Loading DB from {DB_PATH} ...")
 with open(DB_PATH, "r", encoding="utf-8") as f:
-    db_hashes = json.load(f)
+    db_hashes = [h.encode("utf-8") for h in json.load(f)]
 db_hashes = [h for h in db_hashes if is_valid_pydeep(h)]
 print(f"[i] 유효한 DB 해시 개수: {len(db_hashes):,}개\n")
 
@@ -55,10 +55,8 @@ def process_function(entry):
 
         # pydeep 해시 계산
         h = pydeep.hash_buf(code.encode("utf-8"))
-        if isinstance(h, bytes):
-            h = h.decode("utf-8", errors="ignore").strip()
-        if not is_valid_pydeep(h):
-            return None
+        if not h or b"NULL" in h or len(h) < 10:
+            raise ValueError("Invalid pydeep hash")
 
         # DB 전수 비교
         min_diff = 999
@@ -139,3 +137,4 @@ for jsonl_file in tqdm(sorted(SAMPLE_DIR.glob("*.jsonl")), desc="Processing samp
 
 print(f"\n모든 파일 처리 완료! 결과 디렉토리: {OUTPUT_DIR}")
 print(f"저장 실패 함수 목록: {ERROR_LOG}")
+
